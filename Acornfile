@@ -1,8 +1,8 @@
 args: {
     // How often traffic is generated. Higher means faster.
-    requestRate: "1"
+    requestRate: "100"
     // The ratio of requests that will be failures
-    failureRate: "0.0"
+    failureRate: "0.15"
     // How long is waited before sending a response for votes
     artificialDelay: "0ms"
 }
