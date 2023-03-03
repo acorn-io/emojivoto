@@ -1,3 +1,12 @@
+args: {
+    // How often traffic is generated. Higher means faster.
+    requestRate: "1"
+    // The ratio of requests that will be failures
+    failureRate: "0.0"
+    // How long is waited before sending a response for votes
+    artificialDelay: "0ms"
+}
+
 containers: {
     emoji: {
         build: {
@@ -39,6 +48,8 @@ containers: {
         env: {
             GRPC_PORT: "8080",
             PROM_PORT: "8801",
+            FAILURE_RATE: args.failureRate
+	        ARTIFICIAL_DELAY: args.artificialDelay
         }
     }
     web: {
@@ -78,6 +89,7 @@ containers: {
         
         env: {
             WEB_HOST: "web:80",
+            REQUEST_RATE: args.requestRate
         }
     }
 }
