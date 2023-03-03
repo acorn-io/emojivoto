@@ -1,4 +1,6 @@
-FROM buoyantio/emojivoto-svc-base:v12
+ARG image_repo=""
+ARG image_tag=""
+FROM ${image_repo}:emojivoto-svc-base-${image_tag}
 
 ARG svc_name
 

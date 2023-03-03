@@ -1,14 +1,15 @@
-include ./common.mk
+IMAGE_REPO ?= emojivoto
+IMAGE_TAG ?= local
 
 .PHONY: web emoji-svc voting-svc integration-tests push
 
 all: build integration-tests
 
-build-base-docker-image:
-	docker build . -f Dockerfile-base -t "buoyantio/emojivoto-svc-base:$(IMAGE_TAG)"
-
 web:
 	$(MAKE) -C emojivoto-web
+
+compile-web:
+	$(MAKE) -C emojivoto-web compile
 
 emoji-svc:
 	$(MAKE) -C emojivoto-emoji-svc
@@ -16,29 +17,20 @@ emoji-svc:
 voting-svc:
 	$(MAKE) -C emojivoto-voting-svc
 
-build: web emoji-svc voting-svc
+build: build-base-docker-image web emoji-svc voting-svc
 
-multi-arch:
-	$(MAKE) -C emojivoto-web build-multi-arch
-	$(MAKE) -C emojivoto-emoji-svc build-multi-arch
-	$(MAKE) -C emojivoto-voting-svc build-multi-arch
+%-image:
+	docker build . -f ./emojivoto-$*/Dockerfile -t $(IMAGE_REPO):emojivoto-$*-$(IMAGE_TAG)
 
-deploy-to-minikube:
-	$(MAKE) -C emojivoto-web build-container
-	$(MAKE) -C emojivoto-emoji-svc build-container
-	$(MAKE) -C emojivoto-voting-svc build-container
-	kubectl delete -f emojivoto.yml || echo "ok"
-	kubectl apply -f emojivoto.yml
+build-base:
+	docker build . -f Dockerfile-base -t "$(IMAGE_REPO):emojivoto-svc-base-$(IMAGE_TAG)"
 
-deploy-to-docker-compose:
-	docker-compose stop
-	docker-compose rm -vf
-	$(MAKE) -C emojivoto-web build-container
-	$(MAKE) -C emojivoto-emoji-svc build-container
-	$(MAKE) -C emojivoto-voting-svc build-container
-	docker-compose -f ./docker-compose.yml up -d
+images: build-base emoji-svc-image voting-svc-image web-image
 
 push-%:
-	docker push buoyantio/emojivoto-$*:$(IMAGE_TAG)
+	docker push $(IMAGE_REPO):emojivoto-$*-$(IMAGE_TAG)
 
 push: push-svc-base push-emoji-svc push-voting-svc push-web
+
+local:
+	acorn run -i

@@ -1,6 +1,19 @@
-svc_name := emojivoto-emoji-svc
+all: clean compile test
 
-all: clean protoc test package
+clean:
+	rm -rf gen
+	rm -rf bin
+	mkdir -p bin
+	mkdir -p gen
 
-include ../common.mk
+PROTOC ?= protoc
+
+protoc:
+	$(PROTOC) -I .. ../proto/*.proto --go_out=paths=source_relative:./gen --go-grpc_out=paths=source_relative:./gen
+
+compile: protoc
+	go build -v -o bin/emojivoto-emoji-svc cmd/server.go
+
+test:
+	go test ./...
 

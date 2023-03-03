@@ -1,18 +1,27 @@
-svc_name := emojivoto-web
-
-all: clean protoc webpack package-web test package
-
-include ../common.mk
+all: clean protoc webpack package-web compile test 
 
 webpack:
 	$(MAKE) -C webapp
 
 package-web: webpack
-	mkdir -p $(target_dir)/web
-	cp web/favicon.ico $(target_dir)/web
-	cp -a webapp/dist $(target_dir)
+	mkdir -p bin/web
+	cp web/favicon.ico bin/web
+	cp -a webapp/dist bin
 
-compile-vote-bot:
-	GOOS=linux go build -v -o $(target_dir)/emojivoto-vote-bot cmd/vote-bot/main.go
+clean:
+	rm -rf gen
+	rm -rf bin
+	mkdir -p bin
+	mkdir -p gen
 
-compile: compile-vote-bot
+PROTOC ?= protoc
+
+protoc:
+	$(PROTOC) -I .. ../proto/*.proto --go_out=paths=source_relative:./gen --go-grpc_out=paths=source_relative:./gen
+
+compile: clean protoc
+	go build -v -o bin/emojivoto-vote-bot cmd/vote-bot/main.go
+	go build -v -o bin/emojivoto-web cmd/server.go
+
+test:
+	go test ./...

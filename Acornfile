@@ -1,6 +1,9 @@
 containers: {
     emoji: {
-        image: "docker.l5d.io/buoyantio/emojivoto-emoji-svc:v11"
+        build: {
+            dockerfile: "./emojivoto-emoji-svc/Dockerfile"
+            context: "."
+        }
         labels: {
             "app.kubernetes.io/name": "emoji"
             "app.kubernetes.io/part-of": "emojivoto"
@@ -17,21 +20,11 @@ containers: {
             PROM_PORT: "8801",
         }
     }
-    "vote-bot": {
-        image: "docker.l5d.io/buoyantio/emojivoto-web:v11"
-        entrypoint: ["emojivoto-vote-bot"]
-        labels: {
-            "app.kubernetes.io/name": "vote-bot"
-            "app.kubernetes.io/part-of": "emojivoto"
-            "app.kubernetes.io/version": "v11"
-        }
-        
-        env: {
-            WEB_HOST: "web:80",
-        }
-    }
     "voting-svc": {
-        image: "docker.l5d.io/buoyantio/emojivoto-voting-svc:v11"
+        build: {
+            dockerfile: "./emojivoto-voting-svc/Dockerfile"
+            context: "."
+        }
         labels: {
             "app.kubernetes.io/name": "voting-svc"
             "app.kubernetes.io/part-of": "emojivoto"
@@ -49,7 +42,11 @@ containers: {
         }
     }
     web: {
-        image: "docker.l5d.io/buoyantio/emojivoto-web:v11"
+        build: {
+            dockerfile: "./emojivoto-web/Dockerfile"
+            context: "."
+        }
+        entrypoint: ["emojivoto-web"]
         labels: {
             "app.kubernetes.io/name": "emoji"
             "app.kubernetes.io/part-of": "emojivoto"
@@ -64,7 +61,23 @@ containers: {
             WEB_PORT: "8080"
             EMOJISVC_HOST: "emoji:8080"
             VOTINGSVC_HOST: "voting-svc:8080"
-            INDEX_BUNDLE: "dist/index_bundle.js"
+        }
+    }
+
+    "vote-bot": {
+        build: {
+            dockerfile: "./emojivoto-web/Dockerfile"
+            context: "."
+        }
+        entrypoint: ["emojivoto-vote-bot"]
+        labels: {
+            "app.kubernetes.io/name": "vote-bot"
+            "app.kubernetes.io/part-of": "emojivoto"
+            "app.kubernetes.io/version": "v11"
+        }
+        
+        env: {
+            WEB_HOST: "web:80",
         }
     }
 }

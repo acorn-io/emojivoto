@@ -46,7 +46,7 @@ func main() {
 
 	// setting the the TTL is optional, thus invalid numbers are simply ignored
 	timeToLive, _ := strconv.Atoi(os.Getenv("TTL"))
-	var deadline time.Time = time.Unix(0, 0)
+	var deadline time.Time
 
 	if timeToLive != 0 {
 		deadline = time.Now().Add(time.Second * time.Duration(timeToLive))
