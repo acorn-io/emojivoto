@@ -1,39 +1,37 @@
 IMAGE_REPO ?= emojivoto
 IMAGE_TAG ?= local
 
-.PHONY: web emoji-svc voting-svc integration-tests push
+.PHONY: web emoji voting integration-tests push
 
 all: build integration-tests
 
 web:
-	$(MAKE) -C emojivoto-web
+	$(MAKE) -C cmd/web
 
 compile-web:
-	$(MAKE) -C emojivoto-web compile
+	$(MAKE) -C cmd/web compile
 
-emoji-svc:
-	$(MAKE) -C emojivoto-emoji-svc
+emoji:
+	$(MAKE) -C cmd/emoji
 
-voting-svc:
-	$(MAKE) -C emojivoto-voting-svc
+voting:
+	$(MAKE) -C cmd/voting
 
-compile: build-base-docker-image web emoji-svc voting-svc
+compile: web emoji voting
 
 %-image:
-	docker build . -f ./emojivoto-$*/Dockerfile -t $(IMAGE_REPO):emojivoto-$*-$(IMAGE_TAG)
+	docker build . -f ./cmd/$*/Dockerfile -t $(IMAGE_REPO):$*-$(IMAGE_TAG)
 
 build-base:
-	docker build . -f Dockerfile-base -t "$(IMAGE_REPO):emojivoto-svc-base-$(IMAGE_TAG)"
+	docker build . -f Dockerfile-base -t "$(IMAGE_REPO):emojivoto-base-$(IMAGE_TAG)"
 
-images: build-base emoji-svc-image voting-svc-image web-image
-
-push-%:
-	docker push $(IMAGE_REPO):emojivoto-$*-$(IMAGE_TAG)
-
-push: push-svc-base push-emoji-svc push-voting-svc push-web
+images: build-base emoji-image voting-image web-image
 
 local:
-	acorn run -i
+	acorn run -i . --request-rate 1
 
 build:
 	acorn build -t "$(IMAGE_REPO):$(IMAGE_TAG)" .
+
+push:
+	acorn push -t "$(IMAGE_REPO):$(IMAGE_TAG)"

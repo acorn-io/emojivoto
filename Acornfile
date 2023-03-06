@@ -10,9 +10,10 @@ args: {
 containers: {
     emoji: {
         build: {
-            dockerfile: "./emojivoto-emoji-svc/Dockerfile"
+            dockerfile: "./cmd/emoji/Dockerfile"
             context: "."
         }
+
         labels: {
             "app.kubernetes.io/name": "emoji"
             "app.kubernetes.io/part-of": "emojivoto"
@@ -23,27 +24,62 @@ containers: {
             "emoji:8080",
             "emoji:8801",
         ]
+
+        // Setup hot-reloading for backend during development mode using
+        if args.dev {
+            workdir: "/app"
+            image: "docker.io/cosmtrek/air" // https://github.com/cosmtrek/air
+            dirs: {
+                "/app/cmd/emoji": "./cmd/emoji"
+                "/app/main.go": "./cmd/emoji/main.go"
+                "/app/go.mod": "./go.mod"
+                "/app/go.sum": "./go.sum"
+            }
+        }
         
         env: {
             GRPC_PORT: "8080",
             PROM_PORT: "8801",
         }
     }
-    "voting-svc": {
+    voting: {
         build: {
-            dockerfile: "./emojivoto-voting-svc/Dockerfile"
+            dockerfile: "./cmd/voting/Dockerfile"
             context: "."
         }
         labels: {
-            "app.kubernetes.io/name": "voting-svc"
+            "app.kubernetes.io/name": "voting"
             "app.kubernetes.io/part-of": "emojivoto"
             "app.kubernetes.io/version": "v11"
         }
 
         ports: expose: [
-            "voting-svc:8080",
-            "voting-svc:8801",
+            "voting:8080",
+            "voting:8801",
         ]
+
+        // Setup hot-reloading for backend during development mode using
+        if args.dev {
+            workDir: "/app"
+            image: "docker.io/cosmtrek/air" // https://github.com/cosmtrek/air
+            dirs: {
+                "/app": "./cmd/voting"
+                "/app/go.mod": "./go.mod"
+                "/app/go.sum": "./go.sum"
+            }
+        }
+
+        // Setup hot-reloading for backend during development mode using
+        if args.dev {
+            workdir: "/app"
+            image: "docker.io/cosmtrek/air" // https://github.com/cosmtrek/air
+            dirs: {
+                "/app/cmd/voting": "./cmd/voting"
+                "/app/main.go": "./cmd/voting/main.go"
+                "/app/go.mod": "./go.mod"
+                "/app/go.sum": "./go.sum"
+            }
+        }
         
         env: {
             GRPC_PORT: "8080",
@@ -54,39 +90,77 @@ containers: {
     }
     web: {
         build: {
-            dockerfile: "./emojivoto-web/Dockerfile"
+            dockerfile: "./cmd/web/Dockerfile"
             context: "."
         }
-        entrypoint: ["emojivoto-web"]
+        entrypoint: ["server"]
         labels: {
             "app.kubernetes.io/name": "emoji"
             "app.kubernetes.io/part-of": "emojivoto"
             "app.kubernetes.io/version": "v11"
         }
 
-        ports: publish: [
-            "80:8080/http",
-        ]
+        ports: publish: "80:8080/http"
+
+        // Setup hot-reloading for backend during development mode using
+        if args.dev {
+            // workDir: "/app"
+            // image: "docker.io/cosmtrek/air" // https://github.com/cosmtrek/air
+            // dirs: {
+            //     "/app/main.go": "./cmd/web/cmd/server/main.go"
+            //     "/app/go.mod": "./go.mod"
+            //     "/app/go.sum": "./go.sum"
+            // }
+            dependsOn: "dev"
+        }
         
         env: {
+            if args.dev {
+                WEBPACK_DEV_SERVER: "http://dev:8083"
+            }
             WEB_PORT: "8080"
             EMOJISVC_HOST: "emoji:8080"
-            VOTINGSVC_HOST: "voting-svc:8080"
+            VOTINGSVC_HOST: "voting:8080"
+        }
+    }
+
+    if args.dev {
+        "dev": {
+            image: "node:18"
+            workdir: "/app"
+            ports: publish: "8083/http"
+            dirs: "/app": "./cmd/web/webapp"
+            entrypoint: ["make", "dev"]
         }
     }
 
     "vote-bot": {
         build: {
-            dockerfile: "./emojivoto-web/Dockerfile"
+            dockerfile: "./cmd/web/Dockerfile"
             context: "."
         }
-        entrypoint: ["emojivoto-vote-bot"]
+
+        if !args.dev {
+            entrypoint: ["vote-bot"]
+        }
+
         labels: {
             "app.kubernetes.io/name": "vote-bot"
             "app.kubernetes.io/part-of": "emojivoto"
             "app.kubernetes.io/version": "v11"
         }
-        
+
+        // Setup hot-reloading for backend during development mode using
+        if args.dev {
+            workDir: "/app"
+            image: "docker.io/cosmtrek/air" // https://github.com/cosmtrek/air
+            dirs: {
+                "/app/main.go": "./cmd/web/cmd/vote-bot/main.go"
+                "/app/go.mod": "./go.mod"
+                "/app/go.sum": "./go.sum"
+            }
+        }
+
         env: {
             WEB_HOST: "web:80",
             REQUEST_RATE: args.requestRate
